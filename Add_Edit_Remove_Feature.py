@@ -97,11 +97,17 @@ def add_stock():
         if not id_val or not name_val or not price_val or not qty_val:
             messagebox.showwarning("Input Error!", "All fields need to be filled.")
             return
-        
+
         try:
             price_val = float(price_val)
         except ValueError:
             messagebox.showwarning("Input Error!", "Price must be a float or integer.")
+            return
+        
+        try:
+            qty_val = int(qty_val)
+        except ValueError:
+            messagebox.showwarning("Input Error!", "Quantity must be an integer.")
             return
         
         #a variable that contains all the parts of the stock
@@ -151,9 +157,29 @@ def edit_stock():
 
     def save_changes():
         #Updates the chosen item to what the user inputs
-        stocks[index]['name'] = name_entry.get().strip()
-        stocks[index]['price'] = price_entry.get().strip()
-        stocks[index]['quantity'] = qty_entry.get().strip()
+        name_val = name_entry.get().strip()
+        price_val = price_entry.get().strip()
+        qty_val = qty_entry.get().strip()
+
+        if not name_val or not price_val or not qty_val:
+            messagebox.showwarning("Input Error!", "All fields need to be filled.")
+            return
+        
+        try:
+            price_val = float(price_val)
+        except ValueError:
+            messagebox.showwarning("Input Error!", "Price must be a float or integer.")
+            return
+        
+        try:
+            qty_val = int(qty_val)
+        except ValueError:
+            messagebox.showwarning("Input Error!", "Quantity must be an integer.")
+            return
+        
+        stocks[index]['name'] = name_val
+        stocks[index]['price'] = price_val
+        stocks[index]['quantity'] = qty_val
 
         #deletes the old values and inserts the new stock information
         inventory_list.delete(index)
