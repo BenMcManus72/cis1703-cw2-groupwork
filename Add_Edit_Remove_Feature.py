@@ -64,16 +64,17 @@ def save():
 #Add: added by Daniel Caveney
 stocks = []
 
-def open_add_window():
+def add_stock():
     add_win = tk.Toplevel(root)
-    add_win.title("Add New Product")
+    add_win.title("Add New Stock")
+
     
-    # Create input fields
+    #Creates input fields to input stock info
     tk.Label(add_win, text="ID:").grid(row=0, column=0)
     stock_id = tk.Entry(add_win)
     stock_id.grid(row=0, column=1)
 
-    tk.Label(add_win, text="Name:").grid(row=1, column=0)
+    tk.Label(add_win, text="Name:").grid(row=1, column=0) 
     stock_name = tk.Entry(add_win)
     stock_name.grid(row=1, column=1)
 
@@ -85,7 +86,24 @@ def open_add_window():
     stock_qty = tk.Entry(add_win)
     stock_qty.grid(row=3, column=1)
 
+
     def submit():
+        id_val = stock_id.get().strip()
+        name_val = stock_name.get().strip()
+        price_val = stock_price.get().strip()
+        qty_val = stock_qty.get().strip()
+
+        
+        if not id_val or not name_val or not price_val or not qty_val:
+            messagebox.showwarning("Input Error!", "All fields need to be filled.")
+            return
+        
+        try:
+            price_val = float(price_val)
+        except ValueError:
+            messagebox.showwarning("Input Error!", "Price must be a float or integer.")
+            return
+        
         #a variable that contains all the parts of the stock
         new_product = Product(stock_id.get(), stock_name.get(), stock_price.get(), stock_qty.get())
         
@@ -100,30 +118,70 @@ def open_add_window():
 
     tk.Button(add_win, text="Save Product", command=submit).grid(row=4, columnspan=2)
 
+#Edit: added by Daniel Caveney
+def edit_stock():
 
+    selected = inventory_list.curselection()
+
+    if not selected:
+        messagebox.showwarning("Error!", "Select a stock to edit")
+        return
     
+    index = selected[0]
+    stock_info = stocks[index]
+
+    edit_win = tk.Toplevel(root)
+    edit_win.title("Edit Stock")
+
+    #Similar layout to the add window (consistency)
+    tk.Label(edit_win, text="Name:").grid(row=0, column=0)
+    name_entry = tk.Entry(edit_win)
+    name_entry.insert(0, stock_info['name'])
+    name_entry.grid(row=0, column=1)
+    
+    tk.Label(edit_win, text="Price:").grid(row=1, column=0)
+    price_entry = tk.Entry(edit_win)
+    price_entry.insert(0, stock_info['price'])
+    price_entry.grid(row=1, column=1)
+
+    tk.Label(edit_win, text="Quantity:").grid(row=2, column=0)
+    qty_entry = tk.Entry(edit_win)
+    qty_entry.insert(0, stock_info['quantity'])
+    qty_entry.grid(row=2, column=1)
+
+    def save_changes():
+        #Updates the chosen item to what the user inputs
+        stocks[index]['name'] = name_entry.get().strip()
+        stocks[index]['price'] = price_entry.get().strip()
+        stocks[index]['quantity'] = qty_entry.get().strip()
+
+        #deletes the old values and inserts the new stock information
+        inventory_list.delete(index)
+        inventory_list.insert(index, 
+        f"{stocks[index]['name']} (ID: {stocks[index]['id']}), Price: £{stocks[index]['price']}, Quantity: {stocks[index]['quantity']}")
+        
+        status_label.config(text="Product updated", fg="blue")
+        edit_win.destroy()
+
+    tk.Button(edit_win, text="Update", command=save_changes).grid(row=3, columnspan=2)
+
 #Remove: added by Daniel Caveney
 def remove_stock():
 
     selected = inventory_list.curselection()
 
     if not selected:
-        status_label.config(text="No stock selected")
+        messagebox.showwarning("Error!", "Select a stock to remove")
         return
 
     index = selected[0]
-    task = inventory_list.get(index)
 
     if messagebox.askyesno("Confirm", "Remove Stock?"):
-        inventory_list.delete(selected[0])
+        stocks.pop(index)
+        inventory_list.delete(index)
+
         status_label.config(text="Stock deleted from list", fg="green")
         root.after(3000, lambda: status_label.config(text=""))
-
-    inventory_list.delete(index)
-
-    stocks.remove(task)
-
-    status_label.config(text=f"{len(stocks)} total stock")
 
 
 ## .. GUI design (LO3 HCI) ##
@@ -136,10 +194,10 @@ btn_style = {"font": ("Arial", 12), "width": 12} #consistent button style: use *
 inventory_list = tk.Listbox(width=40, height=20)    #Someone
 inventory_list.pack(side="left", anchor="n", padx=10, pady=10)
 
-add_button = tk.Button(root, text="Add Stock", command=open_add_window, **btn_style)  #Dan Caveney
+add_button = tk.Button(root, text="Add Stock", command=add_stock, **btn_style)  #Dan Caveney
 add_button.pack(pady=5, padx=10)
 
-edit_button = tk.Button(text="Edit", **btn_style)    #Someone
+edit_button = tk.Button(text="Edit Stock", command=edit_stock, **btn_style)    #Dan Caveney
 edit_button.pack(pady=5, padx=10)
 
 remove_button = tk.Button(root, text="Remove Stock", command=remove_stock, **btn_style)   #Dan Caveney
