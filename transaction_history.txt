@@ -1,0 +1,2 @@
+2026-04-18 22:47:45 | ADD | ID: 4543534 | Name: esa | Price: 1.0 | Quantity: 1
+2026-04-18 22:48:06 | REMOVE | ID: 4543534 | Name: esa | Price: 1.0 | Quantity: 1
