@@ -1,2 +1,5 @@
 2026-04-18 22:47:45 | ADD | ID: 4543534 | Name: esa | Price: 1.0 | Quantity: 1
 2026-04-18 22:48:06 | REMOVE | ID: 4543534 | Name: esa | Price: 1.0 | Quantity: 1
+2026-04-18 23:03:56 | ADD | ID: 543645 | Name: Pizza | Price: 3.0 | Quantity: 1
+2026-04-18 23:04:28 | EDIT | ID: 543645 | Name: Pizza | Price: 2.0 | Quantity: 3
+2026-04-18 23:04:38 | REMOVE | ID: 543645 | Name: Pizza | Price: 2.0 | Quantity: 3
