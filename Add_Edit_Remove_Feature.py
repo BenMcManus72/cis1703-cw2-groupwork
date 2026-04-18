@@ -233,10 +233,10 @@ smart_alerts = tk.Button(text=f"Smart Alerts")   #could have a little number nex
 # or something to act as a noticacation                 # Someone
 smart_alerts.pack()
 
-value_calculation_button = tk.Button(text="Value Calculation") # Someone
+value_calculation_button = tk.Button(text="Value Calculation") # Esa Burtwistle
 value_calculation_button.pack()
 
-transaction_history_button = tk.Button(text="Transaction History") # Someone
+transaction_history_button = tk.Button(text="Transaction History") # Esa Burtwistle
 transaction_history_button.pack()
 
 save_button = tk.Button(text="Save", command=save) # Ben
