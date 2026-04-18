@@ -187,6 +187,7 @@ def edit_stock():
         inventory_list.insert(index, 
         f"{stocks[index]['name']} (ID: {stocks[index]['id']}), Price: £{stocks[index]['price']}, Quantity: {stocks[index]['quantity']}")
         
+        log_transaction("EDIT", stocks[index])
         status_label.config(text="Product updated", fg="blue")
         edit_win.destroy()
 
@@ -267,8 +268,12 @@ def calculate_total_value():
 
 
 def show_total_value():
+    if not stocks:
+        messagebox.showinfo("Total Stock Value", "No stock available.")
+        return
+
     total_value = calculate_total_value()
-    messagebox.showinfo("Total Stock Value", f"Total stock value: £{total_value:.2f}")
+    messagebox.showinfo("Total Stock Value", f"Total stock value: £{total_value:.2f}") # edited by esa, added for empty stock handling
 
 ## .. GUI design (LO3 HCI) ##
 root = tk.Tk()
