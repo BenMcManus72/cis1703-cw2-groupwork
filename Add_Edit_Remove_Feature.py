@@ -111,10 +111,11 @@ def add_stock():
             return
         
         #a variable that contains all the parts of the stock
-        new_product = Product(stock_id.get(), stock_name.get(), stock_price.get(), stock_qty.get())
+        new_product = Product(id_val, name_val, price_val, qty_val)
         
         # Add new version to your list
         stocks.append(new_product.dict_conv())
+        log_transaction("ADD", stocks[-1])
         
         # Updates Listbox
         inventory_list.insert(tk.END, f"{new_product.name} (ID: {new_product.id}), Price: £{new_product.price}, Quantity: {new_product.quantity}")
@@ -203,12 +204,71 @@ def remove_stock():
     index = selected[0]
 
     if messagebox.askyesno("Confirm", "Remove Stock?"):
+        removed_item = stocks[index]
+        log_transaction("REMOVE", removed_item)
         stocks.pop(index)
         inventory_list.delete(index)
 
         status_label.config(text="Stock deleted from list", fg="green")
         root.after(3000, lambda: status_label.config(text=""))
 
+# Transaction History: added by Esa
+def log_transaction(action, product_data):
+    try:
+        with open("transaction_history.txt", "a") as file:
+            timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+            file.write(
+                f"{timestamp} | {action} | "
+                f"ID: {product_data['id']} | "
+                f"Name: {product_data['name']} | "
+                f"Price: {product_data['price']} | "
+                f"Quantity: {product_data['quantity']}\n"
+            )
+    except:
+        messagebox.showwarning("File Error!", "Could not write to transaction history file.")
+
+
+def show_transaction_history():
+    history_win = tk.Toplevel(root)
+    history_win.title("Transaction History")
+    history_win.geometry("600x400")
+
+    text_box = tk.Text(history_win, wrap="word")
+    text_box.pack(fill="both", expand=True, padx=10, pady=10)
+
+    try:
+        with open("transaction_history.txt", "r") as file:
+            history_data = file.read()
+            if history_data.strip() == "":
+                text_box.insert("1.0", "No transaction history available.")
+            else:
+                text_box.insert("1.0", history_data)
+    except FileNotFoundError:
+        text_box.insert("1.0", "No transaction history file found yet.")
+    except:
+        text_box.insert("1.0", "Could not load transaction history.")
+
+    text_box.config(state="disabled")
+
+
+# Value Calculation: added by Esa Burtwistle
+def calculate_total_value():
+    total_value = 0
+
+    for item in stocks:
+        try:
+            price = float(item["price"])
+            quantity = int(item["quantity"])
+            total_value += price * quantity
+        except:
+            continue
+
+    return total_value
+
+
+def show_total_value():
+    total_value = calculate_total_value()
+    messagebox.showinfo("Total Stock Value", f"Total stock value: £{total_value:.2f}")
 
 ## .. GUI design (LO3 HCI) ##
 root = tk.Tk()
@@ -233,10 +293,10 @@ smart_alerts = tk.Button(text=f"Smart Alerts")   #could have a little number nex
 # or something to act as a noticacation                 # Someone
 smart_alerts.pack()
 
-value_calculation_button = tk.Button(text="Value Calculation") # Esa Burtwistle
+value_calculation_button = tk.Button(root, text="Value Calculation", command=show_total_value) # Esa
 value_calculation_button.pack()
 
-transaction_history_button = tk.Button(text="Transaction History") # Esa Burtwistle
+transaction_history_button = tk.Button(root, text="Transaction History", command=show_transaction_history) # Esa 
 transaction_history_button.pack()
 
 save_button = tk.Button(text="Save", command=save) # Ben
