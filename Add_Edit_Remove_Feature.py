@@ -37,6 +37,7 @@ class PerishableProduct(Product):
             "expiry_date": self.expiry_date,
             "storage_temp":self.storage_temp
         })
+        return data
 
 class ElectronicProduct(Product):
     def __init__(self, id, name, price, quantity, warranty_period, power_usage):
@@ -50,16 +51,43 @@ class ElectronicProduct(Product):
             "warranty_period": self.warranty_period,
             "power_usage": self.power_usage
         })
+        return data
+        
 ## New functions should be made between here until.. ##
 
+# Added by Lewis Jones Function to make the Dashboard View button work
+def update_dashboard():
+    """HCI Requirement: Dashboard View (Total Items, Low Stock, Total Value)"""
+    try:
+        total_qty = sum(int(item['quantity']) for item in stocks)
+        total_val = calculate_total_value()
+        #Low Stock Warning (< 5 units)
+        low_stock_count = len([item for item in stocks if int(item['quantity']) < 5])
+        
+        # Provides visual feedback on system status
+        status_label.config(text=f"Total Items: {total_qty} | Inventory Value: £{total_val:,.2f}", fg="black")
+        smart_alerts.config(text=f"Smart Alerts ({low_stock_count})", fg="red" if low_stock_count > 0 else "black")
+    except Exception:
+        status_label.config(text="Dashboard Error: Check Data Types")
+
+# Added by Lewis jones: Function to make the Smart Alerts button work
+def show_smart_alerts():
+    """Functional Requirement 2: Displays details of low stock items"""
+    low_stock = [f"{item['name']} (Qty: {item['quantity']})" for item in stocks if int(item['quantity']) < 5]
+    if low_stock:
+        messagebox.showwarning("Low Stock Warning", "Items needing restock:\n" + "\n".join(low_stock))
+    else:
+        messagebox.showinfo("Smart Alerts", "All stock levels are healthy.")
+
+# Added by Lewis Jones edit Ben's Save button to ensure it writes to the file
 def save():
     try:
-        with open("save.json","r") as file:
-            data = json.load(file)
-
-
-    except:
-        pass
+        with open("save.json","w") as file:
+            # Writes the current stocks list to the physical JSON file
+            json.dump(stocks, file, indent=4)
+        status_label.config(text="Inventory Saved to JSON", fg="blue")
+    except Exception as e:
+        messagebox.showerror("Save Error", str(e))
 
 #Add: added by Daniel Caveney
 stocks = []
@@ -68,7 +96,6 @@ def add_stock():
     add_win = tk.Toplevel(root)
     add_win.title("Add New Stock")
 
-    
     #Creates input fields to input stock info
     tk.Label(add_win, text="ID:").grid(row=0, column=0)
     stock_id = tk.Entry(add_win)
@@ -86,14 +113,13 @@ def add_stock():
     stock_qty = tk.Entry(add_win)
     stock_qty.grid(row=3, column=1)
 
-
     def submit():
         id_val = stock_id.get().strip()
         name_val = stock_name.get().strip()
         price_val = stock_price.get().strip()
         qty_val = stock_qty.get().strip()
 
-        
+        # Added by Lewis Error handling to prevent empty submissions
         if not id_val or not name_val or not price_val or not qty_val:
             messagebox.showwarning("Input Error!", "All fields need to be filled.")
             return
@@ -119,6 +145,9 @@ def add_stock():
         
         # Updates Listbox
         inventory_list.insert(tk.END, f"{new_product.name} (ID: {new_product.id}), Price: £{new_product.price}, Quantity: {new_product.quantity}")
+        
+        # Update dashboard metrics
+        update_dashboard()
         
         status_label.config(text=f"Added {new_product.name}", fg="green")
         add_win.destroy()
@@ -188,6 +217,10 @@ def edit_stock():
         f"{stocks[index]['name']} (ID: {stocks[index]['id']}), Price: £{stocks[index]['price']}, Quantity: {stocks[index]['quantity']}")
         
         log_transaction("EDIT", stocks[index])
+        
+        # Update dashboard
+        update_dashboard()
+        
         status_label.config(text="Product updated", fg="blue")
         edit_win.destroy()
 
@@ -209,6 +242,9 @@ def remove_stock():
         log_transaction("REMOVE", removed_item)
         stocks.pop(index)
         inventory_list.delete(index)
+
+        # Update dashboard
+        update_dashboard()
 
         status_label.config(text="Stock deleted from list", fg="green")
         root.after(3000, lambda: status_label.config(text=""))
@@ -277,10 +313,14 @@ def show_total_value():
 
 ## .. GUI design (LO3 HCI) ##
 root = tk.Tk()
-root.geometry("500x500")
+root.geometry("500x600") # Adjusted height for the dashboard elements
 root.title("Smart Stock")
 
-btn_style = {"font": ("Arial", 12), "width": 12} #consistent button style: use **btn_style (Dan)
+btn_style = {"font": ("Arial", 12), "width": 15} #consistent button style: use **btn_style (Dan)
+
+# Added by Lewis Visual Dashboard Header
+dashboard_header = tk.Label(root, text="--- SYSTEM DASHBOARD ---", font=("Arial", 12, "bold"))
+dashboard_header.pack(side="top", pady=5)
 
 inventory_list = tk.Listbox(width=40, height=20)    #Someone
 inventory_list.pack(side="left", anchor="n", padx=10, pady=10)
@@ -294,24 +334,29 @@ edit_button.pack(pady=5, padx=10)
 remove_button = tk.Button(root, text="Remove Stock", command=remove_stock, **btn_style)   #Dan Caveney
 remove_button.pack(pady=5, padx=10)
 
-smart_alerts = tk.Button(text=f"Smart Alerts")   #could have a little number next to it
+# Updated by Lewis Linked button to functional logic
+smart_alerts = tk.Button(text=f"Smart Alerts", command=show_smart_alerts, **btn_style)   #could have a little number next to it
 # or something to act as a noticacation                 # Someone
-smart_alerts.pack()
+smart_alerts.pack(pady=5)
 
-value_calculation_button = tk.Button(root, text="Value Calculation", command=show_total_value) # Esa
-value_calculation_button.pack()
+value_calculation_button = tk.Button(root, text="Value Calculation", command=show_total_value, **btn_style) # Esa
+value_calculation_button.pack(pady=5)
 
-transaction_history_button = tk.Button(root, text="Transaction History", command=show_transaction_history) # Esa 
-transaction_history_button.pack()
+transaction_history_button = tk.Button(root, text="Transaction History", command=show_transaction_history, **btn_style) # Esa 
+transaction_history_button.pack(pady=5)
 
-save_button = tk.Button(text="Save", command=save) # Ben
-save_button.pack()
+save_button = tk.Button(text="Save", command=save, **btn_style) # Ben
+save_button.pack(pady=5)
 
-dashboard_button = tk.Button(text="Dashboard View") # Someone
-dashboard_button.pack()
+# Updated by Lewis Linked button to Dashboard Refresh logic
+dashboard_button = tk.Button(text="Dashboard View", command=update_dashboard, **btn_style) # Someone
+dashboard_button.pack(pady=5)
 
 status_label = tk.Label(root, text="Ready") #Dan, added for the labels, allows users to 
                                             #know what they're doing
 status_label.pack(pady=10)
+
+# Initialize stats on startup
+update_dashboard()
 
 root.mainloop()
