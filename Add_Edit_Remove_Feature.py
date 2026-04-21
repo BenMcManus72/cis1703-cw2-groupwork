@@ -59,10 +59,10 @@ class ElectronicProduct(Product):
 def update_dashboard():
     """HCI Requirement: Dashboard View (Total Items, Low Stock, Total Value)"""
     try:
-        total_qty = sum(int(item['quantity']) for item in stocks)
+        total_qty = sum(int(item.quantity) for item in stocks)
         total_val = calculate_total_value()
         #Low Stock Warning (< 5 units)
-        low_stock_count = len([item for item in stocks if int(item['quantity']) < 5])
+        low_stock_count = len([item for item in stocks if int(item.quantity) < 5])
         
         # Provides visual feedback on system status
         status_label.config(text=f"Total Items: {total_qty} | Inventory Value: £{total_val:,.2f}", fg="black")
