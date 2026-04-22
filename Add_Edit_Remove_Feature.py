@@ -59,10 +59,10 @@ class ElectronicProduct(Product):
 def update_dashboard():
     """HCI Requirement: Dashboard View (Total Items, Low Stock, Total Value)"""
     try:
-        total_qty = sum(int(item['quantity']) for item in stocks)
+        total_qty = sum(int(item.quantity) for item in stocks)
         total_val = calculate_total_value()
         #Low Stock Warning (< 5 units)
-        low_stock_count = len([item for item in stocks if int(item['quantity']) < 5])
+        low_stock_count = len([item for item in stocks if int(item.quantity) < 5])
         
         # Provides visual feedback on system status
         status_label.config(text=f"Total Items: {total_qty} | Inventory Value: £{total_val:,.2f}", fg="black")
@@ -90,6 +90,7 @@ def save():
         messagebox.showerror("Save Error", str(e))
 
 #Add: added by Daniel Caveney
+#radio buttons, all dictionary saves replaced by Ben McManus including the introduction of classes
 stocks = []
 
 def add_stock():
@@ -113,14 +114,35 @@ def add_stock():
     stock_qty = tk.Entry(add_win)
     stock_qty.grid(row=3, column=1)
 
+    add_win.class_selection = tk.StringVar(value="perishable")
+    def title_swap(expiry_or_warranty_func, temp_or_power_func):
+        expiry_date_or_warranty.config(text = expiry_or_warranty_func)
+        temp_or_power.config(text= temp_or_power_func)
+        
+    tk.Radiobutton(add_win, text="Perishable", value="perishable", variable=add_win.class_selection, command=lambda:title_swap("Expiry date:", "Temperature:")).grid(row=4, column=0)
+    tk.Radiobutton(add_win, text="Electronic", value="electronic", variable= add_win.class_selection, command=lambda: title_swap("Warranty:","Power usage:")).grid(row=4, column=1)
+
+    expiry_date_or_warranty = tk.Label(add_win, text="Expiry date:")
+    expiry_date_or_warranty.grid(row=5, column=0)
+    Expiry_or_warranty_input = tk.Entry(add_win)
+    Expiry_or_warranty_input.grid(row=5, column=1)
+    
+    
+    temp_or_power = tk.Label(add_win, text="Temperature:")
+    temp_or_power.grid(row=6, column=0)
+    temp_or_power_input = tk.Entry(add_win)
+    temp_or_power_input.grid(row=6, column=1)
+
     def submit():
         id_val = stock_id.get().strip()
         name_val = stock_name.get().strip()
         price_val = stock_price.get().strip()
         qty_val = stock_qty.get().strip()
+        Expiry_or_warranty_input_strip = Expiry_or_warranty_input.get().strip()
+        temp_or_power_input_strip = temp_or_power_input.get().strip()
 
         # Added by Lewis Error handling to prevent empty submissions
-        if not id_val or not name_val or not price_val or not qty_val:
+        if not id_val or not name_val or not price_val or not qty_val or not Expiry_or_warranty_input_strip or not temp_or_power_input_strip:
             messagebox.showwarning("Input Error!", "All fields need to be filled.")
             return
 
@@ -135,26 +157,45 @@ def add_stock():
         except ValueError:
             messagebox.showwarning("Input Error!", "Quantity must be an integer.")
             return
-        
+        try:
+            valid_time = time.strptime(Expiry_or_warranty_input_strip, "%d/%m/%y")
+          
+        except ValueError:
+            messagebox.showwarning("Input Error!", "Expiry has to be in the format DD/MM/YY")
+            return
+        try:
+            tp_or_pw = int(temp_or_power_input_strip)
+        except ValueError:
+            messagebox.showwarning("Input Error!", "Temperature or power usage must be an integer.")
+            return
+
         #a variable that contains all the parts of the stock
-        new_product = Product(id_val, name_val, price_val, qty_val)
+        class_choice = add_win.class_selection.get()
+        item_name = name_val
+        if class_choice == "perishable":
+
+            item_name = PerishableProduct(id_val, name_val, price_val, qty_val,time.strftime("%d/%m/%y",valid_time),tp_or_pw)
+            # Updates Listbox
+            inventory_list.insert(tk.END, f"{item_name.name} (ID: {item_name.id}), Price: £{item_name.price}, Quantity: {item_name.quantity}, Exp date: {item_name.expiry_date}, temperature: {item_name.storage_temp}")
         
+        else:
+            item_name= ElectronicProduct(id_val, name_val, price_val, qty_val,time.strftime("%d/%m/%y",valid_time),tp_or_pw)
+            inventory_list.insert(tk.END, f"{item_name.name} (ID: {item_name.id}), Price: £{item_name.price}, Quantity: {item_name.quantity}, warranty: {item_name.warranty_period}, Power usage: {item_name.power_usage}")
+
         # Add new version to your list
-        stocks.append(new_product.dict_conv())
+        stocks.append(item_name)
         log_transaction("ADD", stocks[-1])
-        
-        # Updates Listbox
-        inventory_list.insert(tk.END, f"{new_product.name} (ID: {new_product.id}), Price: £{new_product.price}, Quantity: {new_product.quantity}")
-        
+         
         # Update dashboard metrics
         update_dashboard()
         
-        status_label.config(text=f"Added {new_product.name}", fg="green")
+        status_label.config(text=f"Added {item_name.name}", fg="green")
         add_win.destroy()
 
-    tk.Button(add_win, text="Save Product", command=submit).grid(row=4, columnspan=2)
+    tk.Button(add_win, text="Save Product", command=submit).grid(row=7, columnspan=2)
 
 #Edit: added by Daniel Caveney
+#radio buttons, all dictionary saves replaced by Ben McManus including the introduction of classes
 def edit_stock():
 
     selected = inventory_list.curselection()
@@ -172,24 +213,75 @@ def edit_stock():
     #Similar layout to the add window (consistency)
     tk.Label(edit_win, text="Name:").grid(row=0, column=0)
     name_entry = tk.Entry(edit_win)
-    name_entry.insert(0, stock_info['name'])
+    name_entry.insert(0, stock_info.name)
     name_entry.grid(row=0, column=1)
     
     tk.Label(edit_win, text="Price:").grid(row=1, column=0)
     price_entry = tk.Entry(edit_win)
-    price_entry.insert(0, stock_info['price'])
+    price_entry.insert(0, stock_info.price)
     price_entry.grid(row=1, column=1)
 
     tk.Label(edit_win, text="Quantity:").grid(row=2, column=0)
     qty_entry = tk.Entry(edit_win)
-    qty_entry.insert(0, stock_info['quantity'])
+    qty_entry.insert(0, stock_info.quantity)
     qty_entry.grid(row=2, column=1)
+
+    if isinstance(stock_info, PerishableProduct):
+        tk.Label(edit_win, text="Expiry Date:").grid(row=3, column=0)
+        expiry_entry = tk.Entry(edit_win)
+        expiry_entry.insert(0, stock_info.expiry_date)
+        expiry_entry.grid(row=3, column=1)
+
+        tk.Label(edit_win, text="Storage Temperature:").grid(row=4, column=0)
+        temp_entry = tk.Entry(edit_win)
+        temp_entry.insert(0, stock_info.storage_temp)
+        temp_entry.grid(row=4, column=1)
+    else:
+        tk.Label(edit_win, text="Warranty end:").grid(row=3, column=0)
+        warranty_entry = tk.Entry(edit_win)
+        warranty_entry.insert(0, stock_info.warranty_period)
+        warranty_entry.grid(row=3, column=1)
+
+        tk.Label(edit_win, text="Power Usage:").grid(row=4, column=0)
+        power_entry = tk.Entry(edit_win)
+        power_entry.insert(0, stock_info.power_usage)
+        power_entry.grid(row=4, column=1)
 
     def save_changes():
         #Updates the chosen item to what the user inputs
         name_val = name_entry.get().strip()
         price_val = price_entry.get().strip()
         qty_val = qty_entry.get().strip()
+        try:
+            expiry_date =expiry_entry.get().strip()
+            temperature = temp_entry.get().strip()
+            
+            try:
+                valid_time = time.strptime(expiry_date, "%d/%m/%y")
+            
+            except ValueError:
+                messagebox.showwarning("Input Error!", "Expiry has to be in the format DD/MM/YY")
+                return
+            try:
+                tp_or_pw = int(temperature)
+            except ValueError:
+                messagebox.showwarning("Input Error!", "Temperature or power usage must be an integer.")
+                return     
+        except NameError:
+            warranty_date = warranty_entry.get().strip()
+            power_usage = power_entry.get().strip()
+
+            try:
+                valid_time = time.strptime(warranty_date, "%d/%m/%y")
+            
+            except ValueError:
+                messagebox.showwarning("Input Error!", "Expiry has to be in the format DD/MM/YY")
+                return
+            try:
+                tp_or_pw = int(power_usage)
+            except ValueError:
+                messagebox.showwarning("Input Error!", "Temperature or power usage must be an integer.")
+                return
 
         if not name_val or not price_val or not qty_val:
             messagebox.showwarning("Input Error!", "All fields need to be filled.")
@@ -207,14 +299,24 @@ def edit_stock():
             messagebox.showwarning("Input Error!", "Quantity must be an integer.")
             return
         
-        stocks[index]['name'] = name_val
-        stocks[index]['price'] = price_val
-        stocks[index]['quantity'] = qty_val
+        stocks[index].name = name_val
+        stocks[index].price = price_val
+        stocks[index].quantity = qty_val
+        if isinstance(stock_info, PerishableProduct):
+            stocks[index].expiry_date = time.strftime("%d/%m/%y",valid_time)
+            stocks[index].storage_temp = tp_or_pw
+        else:
+            stocks[index].warranty_period = time.strftime("%d/%m/%y",valid_time)
+            stocks[index].power_usage = tp_or_pw
 
         #deletes the old values and inserts the new stock information
         inventory_list.delete(index)
-        inventory_list.insert(index, 
-        f"{stocks[index]['name']} (ID: {stocks[index]['id']}), Price: £{stocks[index]['price']}, Quantity: {stocks[index]['quantity']}")
+        if isinstance(stock_info,PerishableProduct):
+            inventory_list.insert(index, 
+            f"{stocks[index].name} (ID: {stocks[index].id}), Price: £{stocks[index].price}, Quantity: {stocks[index].quantity} Exp date: {stocks[index].expiry_date}, temperature: {stocks[index].storage_temp}")
+        else:
+             inventory_list.insert(index, 
+            f"{stocks[index].name} (ID: {stocks[index].id}), Price: £{stocks[index].price}, Quantity: {stocks[index].quantity} warranty: {stocks[index].warranty_period}, Power usage: {stocks[index].power_usage}")
         
         log_transaction("EDIT", stocks[index])
         
@@ -224,7 +326,7 @@ def edit_stock():
         status_label.config(text="Product updated", fg="blue")
         edit_win.destroy()
 
-    tk.Button(edit_win, text="Update", command=save_changes).grid(row=3, columnspan=2)
+    tk.Button(edit_win, text="Update", command=save_changes).grid(row=5, columnspan=2)
 
 #Remove: added by Daniel Caveney
 def remove_stock():
@@ -256,10 +358,10 @@ def log_transaction(action, product_data):
             timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
             file.write(
                 f"{timestamp} | {action} | "
-                f"ID: {product_data['id']} | "
-                f"Name: {product_data['name']} | "
-                f"Price: {product_data['price']} | "
-                f"Quantity: {product_data['quantity']}\n"
+                f"ID: {product_data.id} | "
+                f"Name: {product_data.name} | "
+                f"Price: {product_data.price} | "
+                f"Quantity: {product_data.quantity}\n"
             )
     except:
         messagebox.showwarning("File Error!", "Could not write to transaction history file.")
@@ -294,8 +396,8 @@ def calculate_total_value():
 
     for item in stocks:
         try:
-            price = float(item["price"])
-            quantity = int(item["quantity"])
+            price = float(item.price)
+            quantity = int(item.quantity)
             total_value += price * quantity
         except:
             continue
