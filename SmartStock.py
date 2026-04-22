@@ -415,7 +415,7 @@ def show_total_value():
 
 ## .. GUI design (LO3 HCI) ##
 root = tk.Tk()
-root.geometry("500x600") # Adjusted height for the dashboard elements
+root.geometry("800x500") # Adjusted height for the dashboard elements
 root.title("Smart Stock")
 
 btn_style = {"font": ("Arial", 12), "width": 15} #consistent button style: use **btn_style (Dan)
@@ -424,7 +424,7 @@ btn_style = {"font": ("Arial", 12), "width": 15} #consistent button style: use *
 dashboard_header = tk.Label(root, text="--- SYSTEM DASHBOARD ---", font=("Arial", 12, "bold"))
 dashboard_header.pack(side="top", pady=5)
 
-inventory_list = tk.Listbox(width=40, height=20)    #Someone
+inventory_list = tk.Listbox(width=80, height=20)    #Someone
 inventory_list.pack(side="left", anchor="n", padx=10, pady=10)
 
 add_button = tk.Button(root, text="Add Stock", command=add_stock, **btn_style)  #Dan Caveney
