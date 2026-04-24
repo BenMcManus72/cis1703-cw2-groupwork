@@ -443,6 +443,85 @@ def show_total_value():
     total_value = calculate_total_value()
     messagebox.showinfo("Total Stock Value", f"Total stock value: £{total_value:.2f}") # edited by esa, added for empty stock handling
 
+
+# Added by Aaron Rielly: Dashboard Summary for the items with analytics + colour coding
+def show_dashboard_summary():
+    """HCI Requirement: Advanced Dashboard Summary (Visual + Analytics)"""
+    try:
+        if not stocks:
+            messagebox.showinfo("Dashboard", "No inventory data available.")
+            return
+
+        total_qty = sum(int(item.quantity) for item in stocks)
+        total_val = calculate_total_value()
+        low_stock_items = [item for item in stocks if int(item.quantity) < 5]
+
+        total_products = len(stocks)
+        low_stock_count = len(low_stock_items)
+
+        # Avoid division by zero
+        low_stock_percent = (low_stock_count / total_products * 100) if total_products > 0 else 0
+
+        # Determine system health colour + message
+        if low_stock_count == 0:
+            health_text = "System Healthy"
+            health_color = "green"
+        elif low_stock_percent < 50:
+            health_text = "Warning: ზოგი Low Stock"
+            health_color = "orange"
+        else:
+            health_text = "Critical: High Low Stock"
+            health_color = "red"
+
+        # Create dashboard window
+        dash_win = tk.Toplevel(root)
+        dash_win.title("Inventory Dashboard")
+        dash_win.geometry("400x300")
+
+        # Header
+        tk.Label(dash_win, text="--- Inventory Dashboard ---", 
+                 font=("Arial", 13, "bold")).pack(pady=10)
+
+        # System Health
+        tk.Label(dash_win, text=health_text, fg=health_color, 
+                 font=("Arial", 13, "bold")).pack(pady=5)
+
+        # Core Metrics
+        tk.Label(dash_win, text=f"Total Products: {total_products}", font=("Arial", 11)).pack(pady=3)
+        tk.Label(dash_win, text=f"Total Quantity: {total_qty}", font=("Arial", 11)).pack(pady=3)
+        tk.Label(dash_win, text=f"Inventory Value: £{total_val:.2f}", font=("Arial", 11)).pack(pady=3)
+
+        # Low Stock Analytics
+        tk.Label(dash_win, text=f"Low Stock Items: {low_stock_count}", 
+                 fg="red" if low_stock_count else "black",
+                 font=("Arial", 11, "bold")).pack(pady=5)
+
+        tk.Label(dash_win, text=f"Low Stock Percentage: {low_stock_percent:.1f}%", 
+                 font=("Arial", 11)).pack(pady=3)
+
+        # Divider
+        tk.Label(dash_win, text="-----------------------------").pack(pady=5)
+
+        # Low stock item list
+        if low_stock_items:
+            tk.Label(dash_win, text="Items needing restock:", 
+                     font=("Arial", 11, "bold")).pack()
+
+            for item in low_stock_items:
+                tk.Label(dash_win, 
+                         text=f"{item.name} (Qty: {item.quantity})", 
+                         fg="red").pack()
+        else:
+            tk.Label(dash_win, text="All stock levels are healthy.", 
+                     fg="green").pack()
+
+    except Exception:
+        messagebox.showerror("Dashboard Error", "Could not generate dashboard summary.")
+
+
+
+
+
 ## .. GUI design (LO3 HCI) ##
 root = tk.Tk()
 root.geometry("800x500") # Adjusted height for the dashboard elements
@@ -480,8 +559,9 @@ transaction_history_button.pack(pady=5)
 save_button = tk.Button(text="Save", command=save, **btn_style) # Ben
 save_button.pack(pady=5)
 
+
 # Updated by Lewis Linked button to Dashboard Refresh logic
-dashboard_button = tk.Button(text="Dashboard View", command=update_dashboard, **btn_style) # Someone
+dashboard_button = tk.Button(text="Dashboard View", command=show_dashboard_summary, **btn_style) #Added by Aaron, Links Dashboard Button to dashboard summary code.
 dashboard_button.pack(pady=5)
 
 status_label = tk.Label(root, text="Ready") #Dan, added for the labels, allows users to 
