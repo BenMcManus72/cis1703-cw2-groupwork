@@ -73,18 +73,48 @@ def update_dashboard():
 # Added by Lewis jones: Function to make the Smart Alerts button work
 def show_smart_alerts():
     """Functional Requirement 2: Displays details of low stock items"""
-    low_stock = [f"{item['name']} (Qty: {item['quantity']})" for item in stocks if int(item['quantity']) < 5]
+    low_stock = [f"{item.name} (Qty: {item.quantity})" for item in stocks if int(item.quantity) < 5]
     if low_stock:
         messagebox.showwarning("Low Stock Warning", "Items needing restock:\n" + "\n".join(low_stock))
     else:
         messagebox.showinfo("Smart Alerts", "All stock levels are healthy.")
 
+# added by Ben
+def load_items():
+    try:
+        with open ("save.json", "r") as file:
+            saved_items = json.load(file)
+            for item in saved_items:
+                if item["type"] == "perishable":
+                    
+                    new_item = PerishableProduct(item["id"], item["name"], item["price"], item["quantity"], item["expiry_date"], item["storage_temp"])
+                    stocks.append(new_item)
+                else:
+                    new_item = ElectronicProduct(item["id"], item["name"], item["price"], item["quantity"], item["warranty_period"], item["power_usage"])
+                    stocks.append(new_item)
+            for item in stocks:
+                if isinstance(item, PerishableProduct):
+                    inventory_list.insert(tk.END,f"{item.name} (ID: {item.id}), Price: £{item.price}, Quantity: {item.quantity}, Exp date: {item.expiry_date}, temperature: {item.storage_temp}")
+                else:
+                    inventory_list.insert(tk.END, f"{item.name} (ID: {item.id}), Price: £{item.price}, Quantity: {item.quantity}, warranty: {item.warranty_period}, Power usage: {item.power_usage}")
+
+    except FileNotFoundError:
+        pass
+    except json.decoder.JSONDecodeError:
+        messagebox.showwarning("Broken save file!", "Skipping load process.")
+
+
+#added by Ben
 # Added by Lewis Jones edit Ben's Save button to ensure it writes to the file
 def save():
     try:
+            # Writes the current stocks list to the physical JSON file   
+        dict_form = []
+        for items in stocks:
+            dict_item = items.dict_conv()
+            dict_form.append(dict_item)
         with open("save.json","w") as file:
-            # Writes the current stocks list to the physical JSON file
-            json.dump(stocks, file, indent=4)
+            json.dump(dict_form, file, indent=4)
         status_label.config(text="Inventory Saved to JSON", fg="blue")
     except Exception as e:
         messagebox.showerror("Save Error", str(e))
@@ -460,5 +490,5 @@ status_label.pack(pady=10)
 
 # Initialize stats on startup
 update_dashboard()
-
+load_items()
 root.mainloop()
