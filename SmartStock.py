@@ -97,11 +97,11 @@ def load_items():
                     inventory_list.insert(tk.END,f"{item.name} (ID: {item.id}), Price: £{item.price}, Quantity: {item.quantity}, Exp date: {item.expiry_date}, temperature: {item.storage_temp}")
                 else:
                     inventory_list.insert(tk.END, f"{item.name} (ID: {item.id}), Price: £{item.price}, Quantity: {item.quantity}, warranty: {item.warranty_period}, Power usage: {item.power_usage}")
-
+        #status_label.config(text="File loaded", fg="blue")
     except FileNotFoundError:
-        pass
+        status_label.config(text="No file found", fg="blue")
     except json.decoder.JSONDecodeError:
-        messagebox.showwarning("Broken save file!", "Skipping load process.")
+        messagebox.showwarning("Broken or empty save file!", "Skipping load process.")
 
 
 #added by Ben
@@ -489,6 +489,6 @@ status_label = tk.Label(root, text="Ready") #Dan, added for the labels, allows u
 status_label.pack(pady=10)
 
 # Initialize stats on startup
-update_dashboard()
 load_items()
+update_dashboard()
 root.mainloop()
