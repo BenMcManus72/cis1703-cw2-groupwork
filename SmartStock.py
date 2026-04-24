@@ -71,11 +71,35 @@ def update_dashboard():
         status_label.config(text="Dashboard Error: Check Data Types")
 
 # Added by Lewis jones: Function to make the Smart Alerts button work
+# Updated by Aaron Rielly: Smart Alerts now includes expiry warnings
 def show_smart_alerts():
-    """Functional Requirement 2: Displays details of low stock items"""
+    """Functional Requirement 2: Displays details of low stock items + expiry alerts"""
     low_stock = [f"{item.name} (Qty: {item.quantity})" for item in stocks if int(item.quantity) < 5]
+
+    expiring_items = []
+    current_time = time.time()
+
+    for item in stocks:
+        if isinstance(item, PerishableProduct):
+            try:
+                expiry_time = time.mktime(time.strptime(item.expiry_date, "%d/%m/%y"))
+                days_left = ((expiry_time - current_time) / (60 * 60 * 24) + 1)
+
+                if 0 <= days_left <= 7:
+                    expiring_items.append(f"{item.name} (Expires in {int(days_left)} days)")
+            except:
+                continue
+
+    message = ""
+
     if low_stock:
-        messagebox.showwarning("Low Stock Warning", "Items needing restock:\n" + "\n".join(low_stock))
+        message += "Low Stock Items:\n" + "\n".join(low_stock) + "\n\n"
+
+    if expiring_items:
+        message += "Expiring Soon:\n" + "\n".join(expiring_items)
+
+    if message:
+        messagebox.showwarning("Smart Alerts", message)
     else:
         messagebox.showinfo("Smart Alerts", "All stock levels are healthy.")
 
@@ -464,10 +488,10 @@ def show_dashboard_summary():
 
         # Determine system health colour + message
         if low_stock_count == 0:
-            health_text = "System Healthy"
+            health_text = "Stock Levels Ok"
             health_color = "green"
         else:
-            health_text = "Critical: Low Stock, Replace Immediately"
+            health_text = "Critical: Low Stock, replace immediately"
             health_color = "red"
 
         # Create dashboard window
@@ -516,7 +540,33 @@ def show_dashboard_summary():
         messagebox.showerror("Dashboard Error", "Could not generate dashboard summary.")
 
 
+# Added by Aaron Rielly: Detect items expiring within 7 days on startup
+def check_expiry_alerts():
+    """Functional Requirement: Detect perishable items expiring within 7 days"""
+    try:
+        expiring_items = []
+        current_time = time.time()
 
+        for item in stocks:
+            if isinstance(item, PerishableProduct):
+                try:
+                    expiry_time = time.mktime(time.strptime(item.expiry_date, "%d/%m/%y"))
+                    days_left = ((expiry_time - current_time) / (60 * 60 * 24)+1)
+
+                    if 0 <= days_left <= 7:
+                        expiring_items.append(f"{item.name} (Expires in {int(days_left)} days)")
+                except:
+                    continue
+
+        # Show report on startup
+        if expiring_items:
+            messagebox.showwarning(
+                "Expiry Alert Report",
+                "Items expiring within 7 days:\n\n" + "\n".join(expiring_items)
+            )
+
+    except Exception:
+        messagebox.showerror("Expiry Error", "Could not check expiry dates.")
 
 
 ## .. GUI design (LO3 HCI) ##
@@ -568,4 +618,5 @@ status_label.pack(pady=10)
 # Initialize stats on startup
 load_items()
 update_dashboard()
+check_expiry_alerts() # <-- Added by Aaron to initalise the expiry checks
 root.mainloop()
