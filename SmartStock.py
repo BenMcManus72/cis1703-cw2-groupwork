@@ -466,11 +466,8 @@ def show_dashboard_summary():
         if low_stock_count == 0:
             health_text = "System Healthy"
             health_color = "green"
-        elif low_stock_percent < 50:
-            health_text = "Warning: ზოგი Low Stock"
-            health_color = "orange"
         else:
-            health_text = "Critical: High Low Stock"
+            health_text = "Critical: Low Stock, Replace Immediately"
             health_color = "red"
 
         # Create dashboard window
