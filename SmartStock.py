@@ -211,12 +211,22 @@ def add_stock():
         except ValueError:
             messagebox.showwarning("Input Error!", "Quantity must be an integer.")
             return
-        try:
-            valid_time = time.strptime(Expiry_or_warranty_input_strip, "%d/%m/%y")
-          
-        except ValueError:
-            messagebox.showwarning("Input Error!", "Expiry has to be in the format DD/MM/YY")
-            return
+        # Updated by Esa Burtwistle, separate validation for perishable (date) and electronic (numeric warranty)
+        class_choice = add_win.class_selection.get()
+
+        if class_choice == "perishable":
+            try:
+                valid_time = time.strptime(Expiry_or_warranty_input_strip, "%d/%m/%y")
+            except ValueError:
+                messagebox.showwarning("Input Error!", "Expiry must be in format DD/MM/YY")
+                return
+        else:
+            try:
+                warranty_val = int(Expiry_or_warranty_input_strip)
+            except ValueError:
+                messagebox.showwarning("Input Error!", "Warranty must be a number")
+                return
+    
         try:
             tp_or_pw = int(temp_or_power_input_strip)
         except ValueError:
@@ -233,7 +243,7 @@ def add_stock():
             inventory_list.insert(tk.END, f"{item_name.name} (ID: {item_name.id}), Price: £{item_name.price}, Quantity: {item_name.quantity}, Exp date: {item_name.expiry_date}, temperature: {item_name.storage_temp}")
         
         else:
-            item_name= ElectronicProduct(id_val, name_val, price_val, qty_val,time.strftime("%d/%m/%y",valid_time),tp_or_pw)
+            item_name = ElectronicProduct(id_val, name_val, price_val, qty_val, warranty_val, tp_or_pw)
             inventory_list.insert(tk.END, f"{item_name.name} (ID: {item_name.id}), Price: £{item_name.price}, Quantity: {item_name.quantity}, warranty: {item_name.warranty_period}, Power usage: {item_name.power_usage}")
 
         # Add new version to your list
@@ -405,18 +415,35 @@ def remove_stock():
         status_label.config(text="Stock deleted from list", fg="green")
         root.after(3000, lambda: status_label.config(text=""))
 
-# Transaction History: added by Esa
+# Transaction History: Esa Burtwistle
 def log_transaction(action, product_data):
     try:
         with open("transaction_history.txt", "a") as file:
             timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-            file.write(
+
+            log_entry = (
                 f"{timestamp} | {action} | "
                 f"ID: {product_data.id} | "
                 f"Name: {product_data.name} | "
                 f"Price: {product_data.price} | "
-                f"Quantity: {product_data.quantity}\n"
+                f"Quantity: {product_data.quantity}"
             )
+
+            # Add extra details depending on product type
+            if isinstance(product_data, PerishableProduct):
+                log_entry += (
+                    f" | Expiry Date: {product_data.expiry_date} | "
+                    f"Storage Temp: {product_data.storage_temp}"
+                )
+
+            elif isinstance(product_data, ElectronicProduct):
+                log_entry += (
+                    f" | Warranty Period: {product_data.warranty_period} | "
+                    f"Power Usage: {product_data.power_usage}"
+                )
+
+            file.write(log_entry + "\n")
+
     except:
         messagebox.showwarning("File Error!", "Could not write to transaction history file.")
 
