@@ -64,9 +64,28 @@ def update_dashboard():
         #Low Stock Warning (< 5 units)
         low_stock_count = len([item for item in stocks if int(item.quantity) < 5])
         
+        #Expiry warning (Added by Aaron)
+        expiring_count = 0
+        current_time = time.time()
+
+        for item in stocks:
+            if isinstance(item, PerishableProduct):
+                try:
+                    expiry_time = time.mktime(time.strptime(item.expiry_date, "%d/%m/%y"))
+                    days_left = ((expiry_time - current_time) / (60 * 60 * 24) + 1)
+
+                    if 0 <= days_left <= 7:
+                        expiring_count += 1
+                except:
+                    continue
+
         # Provides visual feedback on system status
         status_label.config(text=f"Total Items: {total_qty} | Inventory Value: £{total_val:,.2f}", fg="black")
-        smart_alerts.config(text=f"Smart Alerts ({low_stock_count})", fg="red" if low_stock_count > 0 else "black")
+
+        #Updated by Aaron to allow for expiring items to be shown
+        total_alerts = low_stock_count + expiring_count
+
+        smart_alerts.config(text=f"Smart Alerts ({total_alerts})", fg="red" if total_alerts > 0 else "black")
     except Exception:
         status_label.config(text="Dashboard Error: Check Data Types")
 
@@ -121,7 +140,6 @@ def load_items():
                     inventory_list.insert(tk.END,f"{item.name} (ID: {item.id}), Price: £{item.price}, Quantity: {item.quantity}, Exp date: {item.expiry_date}, temperature: {item.storage_temp}")
                 else:
                     inventory_list.insert(tk.END, f"{item.name} (ID: {item.id}), Price: £{item.price}, Quantity: {item.quantity}, warranty: {item.warranty_period}, Power usage: {item.power_usage}")
-        #status_label.config(text="File loaded", fg="blue")
     except FileNotFoundError:
         status_label.config(text="No file found", fg="blue")
     except json.decoder.JSONDecodeError:
@@ -187,7 +205,7 @@ def add_stock():
     temp_or_power_input = tk.Entry(add_win)
     temp_or_power_input.grid(row=6, column=1)
 
-    def submit():
+    def submit(): #retreives the users values, and then runs error checks
         id_val = stock_id.get().strip()
         name_val = stock_name.get().strip()
         price_val = stock_price.get().strip()
@@ -211,12 +229,22 @@ def add_stock():
         except ValueError:
             messagebox.showwarning("Input Error!", "Quantity must be an integer.")
             return
-        try:
-            valid_time = time.strptime(Expiry_or_warranty_input_strip, "%d/%m/%y")
-          
-        except ValueError:
-            messagebox.showwarning("Input Error!", "Expiry has to be in the format DD/MM/YY")
-            return
+        # Updated by Esa Burtwistle, separate validation for perishable (date) and electronic (numeric warranty)
+        class_choice = add_win.class_selection.get()
+
+        if class_choice == "perishable":
+            try:
+                valid_time = time.strptime(Expiry_or_warranty_input_strip, "%d/%m/%y")
+            except ValueError:
+                messagebox.showwarning("Input Error!", "Expiry must be in format DD/MM/YY")
+                return
+        else:
+            try:
+                warranty_val = int(Expiry_or_warranty_input_strip)
+            except ValueError:
+                messagebox.showwarning("Input Error!", "Warranty must be a number")
+                return
+    
         try:
             tp_or_pw = int(temp_or_power_input_strip)
         except ValueError:
@@ -233,7 +261,7 @@ def add_stock():
             inventory_list.insert(tk.END, f"{item_name.name} (ID: {item_name.id}), Price: £{item_name.price}, Quantity: {item_name.quantity}, Exp date: {item_name.expiry_date}, temperature: {item_name.storage_temp}")
         
         else:
-            item_name= ElectronicProduct(id_val, name_val, price_val, qty_val,time.strftime("%d/%m/%y",valid_time),tp_or_pw)
+            item_name = ElectronicProduct(id_val, name_val, price_val, qty_val, warranty_val, tp_or_pw)
             inventory_list.insert(tk.END, f"{item_name.name} (ID: {item_name.id}), Price: £{item_name.price}, Quantity: {item_name.quantity}, warranty: {item_name.warranty_period}, Power usage: {item_name.power_usage}")
 
         # Add new version to your list
@@ -306,35 +334,37 @@ def edit_stock():
         name_val = name_entry.get().strip()
         price_val = price_entry.get().strip()
         qty_val = qty_entry.get().strip()
-        try:
-            expiry_date =expiry_entry.get().strip()
+        
+        # Fixed by Esa Burtwistle, keeps electronic warranty numeric when editing
+        if isinstance(stock_info, PerishableProduct):
+            expiry_date = expiry_entry.get().strip()
             temperature = temp_entry.get().strip()
-            
+
             try:
                 valid_time = time.strptime(expiry_date, "%d/%m/%y")
-            
             except ValueError:
-                messagebox.showwarning("Input Error!", "Expiry has to be in the format DD/MM/YY")
+                messagebox.showwarning("Input Error!", "Expiry must be in format DD/MM/YY")
                 return
+
             try:
                 tp_or_pw = int(temperature)
             except ValueError:
-                messagebox.showwarning("Input Error!", "Temperature or power usage must be an integer.")
-                return     
-        except NameError:
-            warranty_date = warranty_entry.get().strip()
+                messagebox.showwarning("Input Error!", "Temperature must be an integer.")
+                return
+        else:
+            warranty_val = warranty_entry.get().strip()
             power_usage = power_entry.get().strip()
 
             try:
-                valid_time = time.strptime(warranty_date, "%d/%m/%y")
-            
+                warranty_val = int(warranty_val)
             except ValueError:
-                messagebox.showwarning("Input Error!", "Expiry has to be in the format DD/MM/YY")
+                messagebox.showwarning("Input Error!", "Warranty must be a number")
                 return
+
             try:
                 tp_or_pw = int(power_usage)
             except ValueError:
-                messagebox.showwarning("Input Error!", "Temperature or power usage must be an integer.")
+                messagebox.showwarning("Input Error!", "Power usage must be an integer.")
                 return
 
         if not name_val or not price_val or not qty_val:
@@ -357,10 +387,10 @@ def edit_stock():
         stocks[index].price = price_val
         stocks[index].quantity = qty_val
         if isinstance(stock_info, PerishableProduct):
-            stocks[index].expiry_date = time.strftime("%d/%m/%y",valid_time)
+            stocks[index].expiry_date = time.strftime("%d/%m/%y", valid_time)
             stocks[index].storage_temp = tp_or_pw
         else:
-            stocks[index].warranty_period = time.strftime("%d/%m/%y",valid_time)
+            stocks[index].warranty_period = warranty_val
             stocks[index].power_usage = tp_or_pw
 
         #deletes the old values and inserts the new stock information
@@ -405,18 +435,35 @@ def remove_stock():
         status_label.config(text="Stock deleted from list", fg="green")
         root.after(3000, lambda: status_label.config(text=""))
 
-# Transaction History: added by Esa
+# Transaction History: Esa Burtwistle
 def log_transaction(action, product_data):
     try:
         with open("transaction_history.txt", "a") as file:
             timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-            file.write(
+
+            log_entry = (
                 f"{timestamp} | {action} | "
                 f"ID: {product_data.id} | "
                 f"Name: {product_data.name} | "
                 f"Price: {product_data.price} | "
-                f"Quantity: {product_data.quantity}\n"
+                f"Quantity: {product_data.quantity}"
             )
+
+            # Add extra details depending on product type
+            if isinstance(product_data, PerishableProduct):
+                log_entry += (
+                    f" | Expiry Date: {product_data.expiry_date} | "
+                    f"Storage Temp: {product_data.storage_temp}"
+                )
+
+            elif isinstance(product_data, ElectronicProduct):
+                log_entry += (
+                    f" | Warranty Period: {product_data.warranty_period} | "
+                    f"Power Usage: {product_data.power_usage}"
+                )
+
+            file.write(log_entry + "\n")
+
     except:
         messagebox.showwarning("File Error!", "Could not write to transaction history file.")
 
