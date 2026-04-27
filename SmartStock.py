@@ -64,9 +64,28 @@ def update_dashboard():
         #Low Stock Warning (< 5 units)
         low_stock_count = len([item for item in stocks if int(item.quantity) < 5])
         
+        #Expiry warning (Added by Aaron)
+        expiring_count = 0
+        current_time = time.time()
+
+        for item in stocks:
+            if isinstance(item, PerishableProduct):
+                try:
+                    expiry_time = time.mktime(time.strptime(item.expiry_date, "%d/%m/%y"))
+                    days_left = ((expiry_time - current_time) / (60 * 60 * 24) + 1)
+
+                    if 0 <= days_left <= 7:
+                        expiring_count += 1
+                except:
+                    continue
+
         # Provides visual feedback on system status
         status_label.config(text=f"Total Items: {total_qty} | Inventory Value: £{total_val:,.2f}", fg="black")
-        smart_alerts.config(text=f"Smart Alerts ({low_stock_count})", fg="red" if low_stock_count > 0 else "black")
+
+        #Updated by Aaron to allow for expiring items to be shown
+        total_alerts = low_stock_count + expiring_count
+
+        smart_alerts.config(text=f"Smart Alerts ({total_alerts})", fg="red" if total_alerts > 0 else "black")
     except Exception:
         status_label.config(text="Dashboard Error: Check Data Types")
 
