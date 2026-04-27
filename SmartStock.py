@@ -121,7 +121,6 @@ def load_items():
                     inventory_list.insert(tk.END,f"{item.name} (ID: {item.id}), Price: £{item.price}, Quantity: {item.quantity}, Exp date: {item.expiry_date}, temperature: {item.storage_temp}")
                 else:
                     inventory_list.insert(tk.END, f"{item.name} (ID: {item.id}), Price: £{item.price}, Quantity: {item.quantity}, warranty: {item.warranty_period}, Power usage: {item.power_usage}")
-        #status_label.config(text="File loaded", fg="blue")
     except FileNotFoundError:
         status_label.config(text="No file found", fg="blue")
     except json.decoder.JSONDecodeError:
@@ -187,7 +186,7 @@ def add_stock():
     temp_or_power_input = tk.Entry(add_win)
     temp_or_power_input.grid(row=6, column=1)
 
-    def submit():
+    def submit(): #retreives the users values, and then runs error checks
         id_val = stock_id.get().strip()
         name_val = stock_name.get().strip()
         price_val = stock_price.get().strip()
