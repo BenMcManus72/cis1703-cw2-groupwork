@@ -315,35 +315,37 @@ def edit_stock():
         name_val = name_entry.get().strip()
         price_val = price_entry.get().strip()
         qty_val = qty_entry.get().strip()
-        try:
-            expiry_date =expiry_entry.get().strip()
+        
+        # Fixed by Esa Burtwistle, keeps electronic warranty numeric when editing
+        if isinstance(stock_info, PerishableProduct):
+            expiry_date = expiry_entry.get().strip()
             temperature = temp_entry.get().strip()
-            
+
             try:
                 valid_time = time.strptime(expiry_date, "%d/%m/%y")
-            
             except ValueError:
-                messagebox.showwarning("Input Error!", "Expiry has to be in the format DD/MM/YY")
+                messagebox.showwarning("Input Error!", "Expiry must be in format DD/MM/YY")
                 return
+
             try:
                 tp_or_pw = int(temperature)
             except ValueError:
-                messagebox.showwarning("Input Error!", "Temperature or power usage must be an integer.")
-                return     
-        except NameError:
-            warranty_date = warranty_entry.get().strip()
+                messagebox.showwarning("Input Error!", "Temperature must be an integer.")
+                return
+        else:
+            warranty_val = warranty_entry.get().strip()
             power_usage = power_entry.get().strip()
 
             try:
-                valid_time = time.strptime(warranty_date, "%d/%m/%y")
-            
+                warranty_val = int(warranty_val)
             except ValueError:
-                messagebox.showwarning("Input Error!", "Expiry has to be in the format DD/MM/YY")
+                messagebox.showwarning("Input Error!", "Warranty must be a number")
                 return
+
             try:
                 tp_or_pw = int(power_usage)
             except ValueError:
-                messagebox.showwarning("Input Error!", "Temperature or power usage must be an integer.")
+                messagebox.showwarning("Input Error!", "Power usage must be an integer.")
                 return
 
         if not name_val or not price_val or not qty_val:
@@ -366,10 +368,10 @@ def edit_stock():
         stocks[index].price = price_val
         stocks[index].quantity = qty_val
         if isinstance(stock_info, PerishableProduct):
-            stocks[index].expiry_date = time.strftime("%d/%m/%y",valid_time)
+            stocks[index].expiry_date = time.strftime("%d/%m/%y", valid_time)
             stocks[index].storage_temp = tp_or_pw
         else:
-            stocks[index].warranty_period = time.strftime("%d/%m/%y",valid_time)
+            stocks[index].warranty_period = warranty_val
             stocks[index].power_usage = tp_or_pw
 
         #deletes the old values and inserts the new stock information
